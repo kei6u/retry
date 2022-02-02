@@ -79,26 +79,6 @@ type ConstantOptions struct {
 var DefaultConstant = Constant(ConstantOptions{})
 
 // NewConstant returns a constant interval retry configuration.
-//
-// Don't do this, it causes an infinity loop.
-//	for retry.Constant(retry.ConstantOptions{
-//		BaseInterval: 100 * time.Millisecond,
-//		MaxInterval:  30 * time.Second,
-//		MaxAttempts:  10,
-//	}).Next() {
-//		fmt.Println("do retry")
-//	}
-//
-// Instead, use:
-//	constant := retry.Constant(retry.ConstantOptions{
-//		BaseInterval: 100 * time.Millisecond,
-//		MaxInterval:  30 * time.Second,
-//		MaxAttempts:  10,
-//	})
-//	for constant.Next() {
-//		fmt.Println("do retry")
-//	}
-func Constant(opts ConstantOptions) options {
 	var (
 		ctx          context.Context
 		maxAttempts  uint
