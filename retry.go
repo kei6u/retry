@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// options provides retry options.
-type options struct {
+// Options provides retry configuration.
+type Options struct {
 	ctx          context.Context
 	factor       float64 // factor controls retry interval ranges.
 	baseInterval time.Duration
@@ -19,7 +19,7 @@ type options struct {
 
 // Next returns true if the next retry should be performed.
 // It waits for the configured interval before the next retry.
-func (o *options) Next() bool {
+func (o *Options) Next() bool {
 	if o.ctx == nil {
 		if o.maxAttempts == 0 {
 			ctx, cancel := defaultContextWithTimeout()
@@ -79,6 +79,7 @@ type ConstantOptions struct {
 var DefaultConstant = Constant(ConstantOptions{})
 
 // NewConstant returns a constant interval retry configuration.
+func Constant(opts ConstantOptions) Options {
 	var (
 		ctx          context.Context
 		maxAttempts  uint
@@ -101,7 +102,7 @@ var DefaultConstant = Constant(ConstantOptions{})
 		maxAttempts = opts.MaxAttempts
 	}
 
-	return options{
+	return Options{
 		ctx:          ctx,
 		factor:       factor,
 		baseInterval: baseInterval,
@@ -131,7 +132,7 @@ type ExponentialBackoffOptions struct {
 var DefaultExponentialBackoff = ExponentialBackoff(ExponentialBackoffOptions{})
 
 // ExponentialBackoff creates a new exponential backoff retry configuration.
-func ExponentialBackoff(opts ExponentialBackoffOptions) options {
+func ExponentialBackoff(opts ExponentialBackoffOptions) Options {
 	var (
 		ctx          context.Context
 		maxAttempts  uint
@@ -156,7 +157,7 @@ func ExponentialBackoff(opts ExponentialBackoffOptions) options {
 		maxAttempts = opts.MaxAttempts
 	}
 
-	return options{
+	return Options{
 		ctx:          ctx,
 		factor:       factor,
 		baseInterval: baseInterval,
