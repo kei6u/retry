@@ -12,6 +12,8 @@ However, I want a new package provides more simple interface and implementation.
 
 ## Usage
 
+See https://pkg.go.dev/github.com/kei6u/retry
+
 ### Import
 
 ```bash
@@ -24,9 +26,15 @@ import "github.com/kei6u/retry"
 
 ### Constant
 
-The constant retry retries at a constant intervals.
+Run [example](https://pkg.go.dev/github.com/kei6u/retry#Constant).
+
+This option retries at constant intervals.
 
 ### Exponential backoff
+
+Run [example](https://pkg.go.dev/github.com/kei6u/retry#example-ExponentialBackoff).
+
+This option retries with the exponential backoff algorithm.
 
 "Exponential backoff is an algorithm that uses feedback to multiplicatively decrease the rate of some process, in order to gradually find an acceptable rate. These algorithms find usage in a wide range of systems and processes, with radio networks and computer networks being particularly notable." ("Exponential backoff," n.d.)
 
