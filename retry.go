@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Options provides retry configuration.
+// Options provides retry configurations.
 type Options struct {
 	ctx          context.Context
 	factor       float64 // factor controls retry interval ranges.
@@ -59,7 +59,7 @@ func randomBetween(min, max float64) float64 {
 	return rand.Float64()*(max-min) + min
 }
 
-// ConstantOptions provides constant interval options.
+// ConstantOptions provides options for constant intervals.
 type ConstantOptions struct {
 	Context     context.Context
 	Interval    time.Duration
@@ -67,7 +67,7 @@ type ConstantOptions struct {
 }
 
 // Constant is a default configuration for constant interval retry.
-// An interval duration is a second and time out is a minute.
+// An interval duration is a second and timeout is a minute.
 var DefaultConstant = Constant(ConstantOptions{})
 
 // NewConstant returns a constant interval retry configuration.
@@ -104,14 +104,13 @@ func Constant(opts ConstantOptions) Options {
 	}
 }
 
-// ExponentialBackoffOptions provides exponential backoff options.
+// ExponentialBackoffOptions provides options for the exponential backoff algorithm.
 type ExponentialBackoffOptions struct {
 	// Context is for timeout or canceling retry loop.
 	Context context.Context
 	// BaseInterval controls the rate of exponential backoff interval growth.
-	// An interval can be computed by the expression below.
-	// interval = baseInterval * (2 ^ retryAttempts)
-	// Randomly choose between interval / 2 and interval if the result is less than maxInterval.
+	// An interval can be computed by this expression. `interval = baseInterval * (2 ^ retryAttempts)``
+	// Randomly choose between `interval / 2`` and `interval`` if the result is less than maxInterval.
 	BaseInterval time.Duration
 	// MaxInterval is the maximum duration to wait for a retry.
 	MaxInterval time.Duration
