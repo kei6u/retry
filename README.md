@@ -3,12 +3,13 @@
 [![.github/workflows/test.yaml](https://github.com/kei6u/retry/actions/workflows/test.yaml/badge.svg)](https://github.com/kei6u/retry/actions/workflows/test.yaml)
 [![GoDoc](https://godoc.org/github.com/kei6u/retry?status.svg&style=flat-square)](http://godoc.org/github.com/kei6u/retry)
 
-This is a Go library provides retry functionality for general operations such as constant interval retry and exponential backoff algorithms.
+This Go package is made from only standard packages that provide retry functionality for general operations.
+You can choose a retry option from constant intervals or the exponential backoff algorithm.
 
 ## Motivation
 
-There are popular awesome similar packages; [avast/retry-go](https://github.com/avast/retry-go), [lestrrat-go/backoff](https://github.com/lestrrat-go/backoff).
-However, I want a new package provides more simple interface and implementation. This is a biggest and only motivation to create this package.
+There are popular fantastic similar packages already.
+However, I want a new package that provides a more straightforward interface and implementation. This is the biggest and only motivation to create this package.
 
 ## Usage
 
