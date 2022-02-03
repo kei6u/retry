@@ -27,7 +27,7 @@ import "github.com/kei6u/retry"
 
 ### Constant
 
-Run [example](https://pkg.go.dev/github.com/kei6u/retry#Constant).
+Run [example](https://pkg.go.dev/github.com/kei6u/retry#example-Constant).
 
 This option retries at constant intervals.
 
