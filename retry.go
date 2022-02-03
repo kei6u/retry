@@ -72,7 +72,7 @@ type ConstantOptions struct {
 	MaxAttempts uint
 }
 
-// Constant is a default configuration for constant interval retry.
+// DefaultConstant is a default configuration for constant interval retry.
 // An interval duration is a second and timeout is a minute.
 var DefaultConstant = Constant(ConstantOptions{})
 
