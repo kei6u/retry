@@ -7,10 +7,11 @@ import (
 )
 
 func TestConstant(t *testing.T) {
-	t.Run("use DefaultConstant of global variable", func(t *testing.T) {
+	t.Run("set empty Constant struct", func(t *testing.T) {
 		overwrite_defaltTimeoutDuration(t, 10*time.Millisecond)
 		start := time.Now()
-		for DefaultConstant.Next() {
+		retrier := New(Constant{})
+		for retrier.Next() {
 		}
 		if time.Since(start) < 10*time.Millisecond {
 			t.Fatalf("expected to timeout after 100ms")
@@ -18,11 +19,11 @@ func TestConstant(t *testing.T) {
 	})
 	t.Run("set max attempts only", func(t *testing.T) {
 		retryCount := 0
-		constant := Constant(ConstantOptions{
+		retrier := New(Constant{
 			Interval:    time.Millisecond,
 			MaxAttempts: 10,
 		})
-		for constant.Next() {
+		for retrier.Next() {
 			retryCount++
 		}
 		if retryCount != 10 {
@@ -32,12 +33,12 @@ func TestConstant(t *testing.T) {
 	t.Run("set timeout only", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Millisecond)
 		defer cancel()
-		constant := Constant(ConstantOptions{
+		retrier := New(Constant{
 			Context:  ctx,
 			Interval: time.Second,
 		})
 		start := time.Now()
-		for constant.Next() {
+		for retrier.Next() {
 		}
 		if time.Since(start) < 10*time.Millisecond {
 			t.Fatal("expected timeout after 10ms")
@@ -46,14 +47,14 @@ func TestConstant(t *testing.T) {
 	t.Run("prioritize max attempts", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
 		defer cancel()
-		constant := Constant(ConstantOptions{
+		retrier := New(Constant{
 			Context:     ctx,
 			Interval:    time.Millisecond,
 			MaxAttempts: 10,
 		})
 		start := time.Now()
 		retryCount := 0
-		for constant.Next() {
+		for retrier.Next() {
 			retryCount++
 		}
 		if time.Second < time.Since(start) && retryCount < 10 {
@@ -63,14 +64,14 @@ func TestConstant(t *testing.T) {
 	t.Run("prioritize timeout", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Millisecond)
 		defer cancel()
-		constant := Constant(ConstantOptions{
+		retrier := New(Constant{
 			Context:     ctx,
 			Interval:    2 * time.Millisecond,
 			MaxAttempts: 10,
 		})
 		start := time.Now()
 		retryCount := 0
-		for constant.Next() {
+		for retrier.Next() {
 			t.Logf("retry %d, %s elapsed", retryCount, time.Since(start))
 			retryCount++
 		}
@@ -82,23 +83,24 @@ func TestConstant(t *testing.T) {
 }
 
 func TestExponentialBackoff(t *testing.T) {
-	t.Run("use DefaultExponentialBackoff of global variable", func(t *testing.T) {
+	t.Run("set empty ExponentialBackoff struct", func(t *testing.T) {
 		overwrite_defaltTimeoutDuration(t, 10*time.Millisecond)
 		start := time.Now()
-		for DefaultExponentialBackoff.Next() {
+		retrier := New(ExponentialBackoff{})
+		for retrier.Next() {
 		}
 		if time.Since(start) < 10*time.Millisecond {
 			t.Fatalf("expected to timeout after 10ms")
 		}
 	})
 	t.Run("set max attempts only", func(t *testing.T) {
-		backoff := ExponentialBackoff(ExponentialBackoffOptions{
+		retrier := New(ExponentialBackoff{
 			BaseInterval: time.Millisecond,
 			MaxAttempts:  10,
 		})
 		start := time.Now()
 		retryCount := 0
-		for backoff.Next() {
+		for retrier.Next() {
 			t.Logf("retry %d, %s elapsed", retryCount, time.Since(start))
 			retryCount++
 		}
@@ -113,12 +115,12 @@ func TestExponentialBackoff(t *testing.T) {
 	t.Run("set timeout only", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Millisecond)
 		defer cancel()
-		backoff := ExponentialBackoff(ExponentialBackoffOptions{
+		retrier := New(ExponentialBackoff{
 			Context:      ctx,
 			BaseInterval: time.Second,
 		})
 		start := time.Now()
-		for backoff.Next() {
+		for retrier.Next() {
 		}
 		if time.Since(start) < 10*time.Millisecond {
 			t.Fatalf("expected to timeout 10ms, but %s elapsed", time.Since(start))
@@ -127,14 +129,14 @@ func TestExponentialBackoff(t *testing.T) {
 	t.Run("max attempts is prioritized", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
 		defer cancel()
-		backoff := ExponentialBackoff(ExponentialBackoffOptions{
+		retrier := New(ExponentialBackoff{
 			Context:      ctx,
 			BaseInterval: time.Millisecond,
 			MaxAttempts:  10,
 		})
 		start := time.Now()
 		retryCount := 0
-		for backoff.Next() {
+		for retrier.Next() {
 			retryCount++
 		}
 		if time.Second < time.Since(start) && retryCount < 10 {
@@ -144,14 +146,14 @@ func TestExponentialBackoff(t *testing.T) {
 	t.Run("timeout is prioritized", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Millisecond)
 		defer cancel()
-		backoff := ExponentialBackoff(ExponentialBackoffOptions{
+		retrier := New(ExponentialBackoff{
 			Context:      ctx,
 			BaseInterval: time.Millisecond,
 			MaxAttempts:  10,
 		})
 		start := time.Now()
 		retryCount := 0
-		for backoff.Next() {
+		for retrier.Next() {
 			retryCount++
 		}
 		if 10 <= retryCount && 10*time.Millisecond < time.Since(start) {

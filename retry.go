@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// Options provides retry configurations.
-type Options struct {
+// retrier provides retry functionalities.
+type retrier struct {
 	ctx          context.Context
 	factor       float64 // factor controls retry interval ranges.
 	baseInterval time.Duration
@@ -19,39 +19,48 @@ type Options struct {
 
 // Next returns true if the next retry should be performed
 // and waits for the interval before the next retry.
-func (o *Options) Next() bool {
-	if o.ctx == nil {
+func (r *retrier) Next() bool {
+	if r.ctx == nil {
 		ctx, cancel := context.WithTimeout(
 			context.Background(),
 			defaultTimeoutDuration,
 		)
-		o.ctx = ctx
+		r.ctx = ctx
 		go func() {
 			<-ctx.Done()
 			cancel()
 		}()
 	}
 	defer func() {
-		o.attempts++
+		r.attempts++
 	}()
-	if o.attempts == 0 {
+	if r.attempts == 0 {
 		return true
 	}
-	if o.attempts == o.maxAttempts {
+	if r.attempts == r.maxAttempts {
 		return false
 	}
-	interval := float64(o.baseInterval) * math.Pow(2, o.attempts)
-	factoredInterval := interval / o.factor
+	interval := float64(r.baseInterval) * math.Pow(2, r.attempts)
+	factoredInterval := interval / r.factor
 	waitDuration := time.Duration(randomBetween(factoredInterval, interval))
-	if o.maxInterval < waitDuration {
-		waitDuration = o.maxInterval
+	if r.maxInterval < waitDuration {
+		waitDuration = r.maxInterval
 	}
 	select {
-	case <-o.ctx.Done():
+	case <-r.ctx.Done():
 		return false
 	case <-time.After(waitDuration):
 		return true
 	}
+}
+
+type strategy interface {
+	new() retrier
+}
+
+// New creates a new Retrier.
+func New(f strategy) retrier {
+	return f.new()
 }
 
 // defining this as a global variable for testing.
@@ -62,8 +71,10 @@ func randomBetween(min, max float64) float64 {
 	return rand.Float64()*(max-min) + min
 }
 
-// ConstantOptions provides options for constant intervals.
-type ConstantOptions struct {
+var _ strategy = (*Constant)(nil)
+
+// Constant provides options for constant intervals.
+type Constant struct {
 	// Context is for timeout or canceling retry loop.
 	Context context.Context
 	// Interval is the interval between retries.
@@ -72,12 +83,7 @@ type ConstantOptions struct {
 	MaxAttempts uint
 }
 
-// DefaultConstant is a default configuration for constant interval retry.
-// An interval duration is a second and timeout is a minute.
-var DefaultConstant = Constant(ConstantOptions{})
-
-// NewConstant returns a constant interval retry configuration.
-func Constant(opts ConstantOptions) Options {
+func (opts Constant) new() retrier {
 	var (
 		maxAttempts  uint
 		baseInterval = time.Second
@@ -96,7 +102,7 @@ func Constant(opts ConstantOptions) Options {
 		maxAttempts = opts.MaxAttempts
 	}
 
-	return Options{
+	return retrier{
 		ctx:          opts.Context,
 		factor:       factor,
 		baseInterval: baseInterval,
@@ -106,7 +112,9 @@ func Constant(opts ConstantOptions) Options {
 	}
 }
 
-// ExponentialBackoffOptions provides options for the exponential backoff algorithm.
+var _ strategy = (*ExponentialBackoff)(nil)
+
+// ExponentialBackoff provides options for the exponential backoff algorithm.
 //
 // An interval can be computed by this expression.
 //
@@ -114,7 +122,7 @@ func Constant(opts ConstantOptions) Options {
 //
 // Then, randomly choose a float64 number from `interval / 2` to `interval`.
 // If a chosen float64 number is more than maxInterval, use maxInterval instead.
-type ExponentialBackoffOptions struct {
+type ExponentialBackoff struct {
 	// Context is for timeout or canceling retry loop.
 	Context context.Context
 	// BaseInterval controls the rate of exponential backoff interval growth.
@@ -125,12 +133,7 @@ type ExponentialBackoffOptions struct {
 	MaxAttempts uint
 }
 
-// DefaultExponentialBackoff is a default configuration for exponential backoff retry.
-// Base interval is a second, max interval is a minute and timeout is a minute.
-var DefaultExponentialBackoff = ExponentialBackoff(ExponentialBackoffOptions{})
-
-// ExponentialBackoff creates a new exponential backoff retry configuration.
-func ExponentialBackoff(opts ExponentialBackoffOptions) Options {
+func (opts ExponentialBackoff) new() retrier {
 	var (
 		maxAttempts  uint
 		baseInterval = time.Second
@@ -151,7 +154,7 @@ func ExponentialBackoff(opts ExponentialBackoffOptions) Options {
 		maxAttempts = opts.MaxAttempts
 	}
 
-	return Options{
+	return retrier{
 		ctx:          opts.Context,
 		factor:       factor,
 		baseInterval: baseInterval,

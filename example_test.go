@@ -8,13 +8,13 @@ import (
 )
 
 func ExampleConstant() {
-	constant := retry.Constant(retry.ConstantOptions{
+	retrier := retry.New(retry.Constant{
 		Interval:    100 * time.Millisecond,
 		MaxAttempts: 10,
 	})
 	retryCount := 0
 	start := time.Now()
-	for constant.Next() {
+	for retrier.Next() {
 		retryCount++
 		fmt.Printf("retry %d: %s elapsed\n", retryCount, time.Since(start))
 		start = time.Now()
@@ -22,14 +22,14 @@ func ExampleConstant() {
 }
 
 func ExampleExponentialBackoff() {
-	backoff := retry.ExponentialBackoff(retry.ExponentialBackoffOptions{
+	retrier := retry.New(retry.ExponentialBackoff{
 		BaseInterval: 100 * time.Millisecond,
 		MaxInterval:  10 * time.Second,
 		MaxAttempts:  10,
 	})
 	retryCount := 0
 	start := time.Now()
-	for backoff.Next() {
+	for retrier.Next() {
 		retryCount++
 		fmt.Printf("retry %d: %s elapsed\n", retryCount, time.Since(start))
 		start = time.Now()
