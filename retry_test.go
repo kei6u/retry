@@ -8,7 +8,7 @@ import (
 
 func TestConstant(t *testing.T) {
 	t.Run("use DefaultConstant of global variable", func(t *testing.T) {
-		overwrite_defaltContextWithTimeout(t, 10*time.Millisecond)
+		overwrite_defaltTimeoutDuration(t, 10*time.Millisecond)
 		start := time.Now()
 		for DefaultConstant.Next() {
 		}
@@ -83,7 +83,7 @@ func TestConstant(t *testing.T) {
 
 func TestExponentialBackoff(t *testing.T) {
 	t.Run("use DefaultExponentialBackoff of global variable", func(t *testing.T) {
-		overwrite_defaltContextWithTimeout(t, 10*time.Millisecond)
+		overwrite_defaltTimeoutDuration(t, 10*time.Millisecond)
 		start := time.Now()
 		for DefaultExponentialBackoff.Next() {
 		}
@@ -160,14 +160,10 @@ func TestExponentialBackoff(t *testing.T) {
 	})
 }
 
-func overwrite_defaltContextWithTimeout(t *testing.T, d time.Duration) {
-	defaultContextWithTimeout = func() (context.Context, context.CancelFunc) {
-		return context.WithTimeout(context.TODO(), d)
-	}
+func overwrite_defaltTimeoutDuration(t *testing.T, d time.Duration) {
+	defaultTimeoutDuration = d
 	t.Cleanup(func() {
 		// reset to default not to effect other tests.
-		defaultContextWithTimeout = func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.TODO(), time.Minute)
-		}
+		defaultTimeoutDuration = time.Minute
 	})
 }

@@ -21,7 +21,7 @@ type Options struct {
 // It waits for the configured interval before the next retry.
 func (o *Options) Next() bool {
 	if o.ctx == nil {
-		ctx, cancel := defaultContextWithTimeout()
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeoutDuration)
 		o.ctx = ctx
 		go func() {
 			<-ctx.Done()
@@ -51,11 +51,8 @@ func (o *Options) Next() bool {
 	}
 }
 
-// defaultContextWithTimeout retruns context with default timeout.
-// The reason why it is implemented as a variable is for testing.
-var defaultContextWithTimeout = func() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.TODO(), time.Minute)
-}
+// defining this as a global variable for testing.
+var defaultTimeoutDuration = time.Minute
 
 // randomBetween returns a random float64 number between min and max.
 func randomBetween(min, max float64) float64 {
