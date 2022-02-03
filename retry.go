@@ -17,11 +17,14 @@ type Options struct {
 	attempts     float64
 }
 
-// Next returns true if the next retry should be performed.
-// It waits for the configured interval before the next retry.
+// Next returns true if the next retry should be performed
+// and waits for the interval before the next retry.
 func (o *Options) Next() bool {
 	if o.ctx == nil {
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeoutDuration)
+		ctx, cancel := context.WithTimeout(
+			context.Background(),
+			defaultTimeoutDuration,
+		)
 		o.ctx = ctx
 		go func() {
 			<-ctx.Done()
@@ -73,19 +76,15 @@ var DefaultConstant = Constant(ConstantOptions{})
 // NewConstant returns a constant interval retry configuration.
 func Constant(opts ConstantOptions) Options {
 	var (
-		ctx          context.Context
 		maxAttempts  uint
-		baseInterval               = time.Second
-		maxInterval  time.Duration = time.Second
+		baseInterval = time.Second
+		maxInterval  = time.Second
 	)
 	const (
 		factor   float64 = 1 // for constant interval.
 		attempts float64 = 0
 	)
 
-	if opts.Context != nil {
-		ctx = opts.Context
-	}
 	if opts.Interval != 0 {
 		baseInterval = opts.Interval
 		maxInterval = opts.Interval
@@ -95,7 +94,7 @@ func Constant(opts ConstantOptions) Options {
 	}
 
 	return Options{
-		ctx:          ctx,
+		ctx:          opts.Context,
 		factor:       factor,
 		baseInterval: baseInterval,
 		maxInterval:  maxInterval,
@@ -109,10 +108,14 @@ type ExponentialBackoffOptions struct {
 	// Context is for timeout or canceling retry loop.
 	Context context.Context
 	// BaseInterval controls the rate of exponential backoff interval growth.
-	// An interval can be computed by this expression. `interval = baseInterval * (2 ^ retryAttempts)``
-	// Randomly choose between `interval / 2`` and `interval`` if the result is less than maxInterval.
+	// An interval can be computed by this expression.
+	//
+	// interval = baseInterval * (2 ^ retryAttempts)
+	//
+	// Randomly choose a float64 number from `interval / 2` to `interval`,
+	// if a chosen float64 number is less than maxInterval.
 	BaseInterval time.Duration
-	// MaxInterval is the maximum duration to wait for a retry.
+	// MaxInterval is the maximum wait duration to retry.
 	MaxInterval time.Duration
 	// MaxAttempts is the maximum number of attempts to retry.
 	MaxAttempts uint
@@ -125,7 +128,6 @@ var DefaultExponentialBackoff = ExponentialBackoff(ExponentialBackoffOptions{})
 // ExponentialBackoff creates a new exponential backoff retry configuration.
 func ExponentialBackoff(opts ExponentialBackoffOptions) Options {
 	var (
-		ctx          context.Context
 		maxAttempts  uint
 		baseInterval = time.Second
 		maxInterval  = 64 * time.Second
@@ -135,9 +137,6 @@ func ExponentialBackoff(opts ExponentialBackoffOptions) Options {
 		attempts float64 = 0
 	)
 
-	if opts.Context != nil {
-		ctx = opts.Context
-	}
 	if opts.BaseInterval != 0 {
 		baseInterval = opts.BaseInterval
 	}
@@ -149,7 +148,7 @@ func ExponentialBackoff(opts ExponentialBackoffOptions) Options {
 	}
 
 	return Options{
-		ctx:          ctx,
+		ctx:          opts.Context,
 		factor:       factor,
 		baseInterval: baseInterval,
 		maxInterval:  maxInterval,
