@@ -21,14 +21,12 @@ type Options struct {
 // It waits for the configured interval before the next retry.
 func (o *Options) Next() bool {
 	if o.ctx == nil {
-		if o.maxAttempts == 0 {
-			ctx, cancel := defaultContextWithTimeout()
-			o.ctx = ctx
-			go func() {
-				<-ctx.Done()
-				cancel()
-			}()
-		}
+		ctx, cancel := defaultContextWithTimeout()
+		o.ctx = ctx
+		go func() {
+			<-ctx.Done()
+			cancel()
+		}()
 	}
 	defer func() {
 		o.attempts++
@@ -39,21 +37,18 @@ func (o *Options) Next() bool {
 	if o.attempts == o.maxAttempts {
 		return false
 	}
-	if o.ctx != nil {
-		select {
-		case <-o.ctx.Done():
-			return false
-		default:
-		}
-	}
 	interval := float64(o.baseInterval) * math.Pow(2, o.attempts)
 	factoredInterval := interval / o.factor
 	waitDuration := time.Duration(randomBetween(factoredInterval, interval))
 	if o.maxInterval < waitDuration {
 		waitDuration = o.maxInterval
 	}
-	time.Sleep(waitDuration)
-	return true
+	select {
+	case <-o.ctx.Done():
+		return false
+	case <-time.After(waitDuration):
+		return true
+	}
 }
 
 // defaultContextWithTimeout retruns context with default timeout.
