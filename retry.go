@@ -107,16 +107,17 @@ func Constant(opts ConstantOptions) Options {
 }
 
 // ExponentialBackoffOptions provides options for the exponential backoff algorithm.
+//
+// An interval can be computed by this expression.
+//
+// interval = baseInterval * (2 ^ retryAttempts)
+//
+// Then, randomly choose a float64 number from `interval / 2` to `interval`.
+// If a chosen float64 number is more than maxInterval, use maxInterval instead.
 type ExponentialBackoffOptions struct {
 	// Context is for timeout or canceling retry loop.
 	Context context.Context
 	// BaseInterval controls the rate of exponential backoff interval growth.
-	// An interval can be computed by this expression.
-	//
-	// interval = baseInterval * (2 ^ retryAttempts)
-	//
-	// Randomly choose a float64 number from `interval / 2` to `interval`,
-	// if a chosen float64 number is less than maxInterval.
 	BaseInterval time.Duration
 	// MaxInterval is the maximum wait duration to retry.
 	MaxInterval time.Duration
