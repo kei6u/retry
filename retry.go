@@ -64,8 +64,11 @@ func randomBetween(min, max float64) float64 {
 
 // ConstantOptions provides options for constant intervals.
 type ConstantOptions struct {
-	Context     context.Context
-	Interval    time.Duration
+	// Context is for timeout or canceling retry loop.
+	Context context.Context
+	// Interval is the interval between retries.
+	Interval time.Duration
+	// MaxAttempts is the maximum number of attempts to retry.
 	MaxAttempts uint
 }
 
