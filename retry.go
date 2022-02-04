@@ -59,8 +59,8 @@ type strategy interface {
 }
 
 // New creates a new Retrier.
-func New(f strategy) retrier {
-	return f.new()
+func New(s strategy) retrier {
+	return s.new()
 }
 
 // defining this as a global variable for testing.
