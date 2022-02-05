@@ -33,16 +33,31 @@ import "github.com/kei6u/retry"
 
 ```go
 r := retry.New(retry.Jitter{
-	Base:        time.Millisecond,
-	Max:         100 * time.Millisecond,
+	Base:        time.Second,
+	Max:         30 * time.Second,
 	MaxAttempts: 30,
 })
-attempts := 0
-start := time.Now()
 for r.Next() {
-	fmt.Printf("attempt %d, %s\n", attempts, time.Since(start))
-	start = time.Now()
-	attempts++
+	resp, err := http.Get("http://example.com")
+	if err != nil {
+		return nil, err
+	}
+	if 500 <= resp.StatusCode && resp.StatusCode < 600 {
+		_ = resp.Body.Close()
+		continue
+	}
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		_ = resp.Body.Close()
+		return nil, err
+	}
+	var m map[string]interface{}
+	if err := json.Unmarshal(b, &m); err != nil {
+		_ = resp.Body.Close()
+		return nil, err
+	}
+	_ = resp.Body.Close()
+	return m, nil
 }
 ```
 
