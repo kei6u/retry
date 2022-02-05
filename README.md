@@ -4,12 +4,16 @@
 [![GoDoc](https://godoc.org/github.com/kei6u/retry?status.svg&style=flat-square)](http://godoc.org/github.com/kei6u/retry)
 
 This Go library is made from only standard libraries and provides retry functionality for general operations.
-You can choose a retry strategy from constant intervals or the exponential backoff algorithm.
+You can choose a retry algorithm from constant intervals, decorrelated jitter algorithm, exponential backoff algorithm.
 
 ## Motivation
 
-There are popular fantastic similar libraries already.
-However, I want a new library that provides a more straightforward interface and implementation. This is the biggest and only motivation to create this library.
+I would like to use retry algorithms inspired by [Exponential Backoff And Jitter | AWS Architecture Blog](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) in Go.
+
+## When
+
+- When the database returns internal errors, your application will retry to run SQL with this library.
+- When the API returns 5xx errors, your application will retry to call it with this library.
 
 ## Usage
 
@@ -25,16 +29,20 @@ go get github.com/kei6u/retry
 import "github.com/kei6u/retry"
 ```
 
+### Jitter (Recommended)
+
+This algorithm provides retries with "Decorrelated Jitter" from [Exponential Backoff And Jitter | AWS Architecture Blog](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/). This blog introduces this algorithm as better. You can run the [example](https://pkg.go.dev/github.com/kei6u/retry#example-Jitter) on your browser.
+
+> It’s worth noting that none of these approaches fundamentally change the N2 nature of the work to be done, but do substantially reduce work at reasonable levels of contention. The return on implementation complexity of using jittered backoff is huge, and it should be considered a standard approach for remote clients.
+> https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+
 ### Constant
 
-This strategy provides retries at constant intervals. You can run the [example](https://pkg.go.dev/github.com/kei6u/retry#example-Constant) on your browser.
+This algorithm provides retries at constant intervals. You can run the [example](https://pkg.go.dev/github.com/kei6u/retry#example-Constant) on your browser.
 
 ### Exponential backoff
 
-This strategy provides retries with the exponential backoff algorithm. You can run the [example](https://pkg.go.dev/github.com/kei6u/retry#example-ExponentialBackoff) on your browser.
+This algorithm provides retries with the exponential backoff algorithm. You can run the [example](https://pkg.go.dev/github.com/kei6u/retry#example-ExponentialBackoff) on your browser.
 
-"Exponential backoff is an algorithm that uses feedback to multiplicatively decrease the rate of some process, in order to gradually find an acceptable rate. These algorithms find usage in a wide range of systems and processes, with radio networks and computer networks being particularly notable." ("Exponential backoff," n.d.)
-
-Reference
-
-Exponential backoff. (n.d.). In Wikipedia. https://en.wikipedia.org/wiki/Exponential_backoff
+> Exponential backoff is an algorithm that uses feedback to multiplicatively decrease the rate of some process, in order to gradually find an acceptable rate. These algorithms find usage in a wide range of systems and processes, with radio networks and computer networks being particularly notable.
+> https://en.wikipedia.org/wiki/Exponential_backoff

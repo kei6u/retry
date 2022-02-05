@@ -7,159 +7,202 @@ import (
 )
 
 func TestConstant(t *testing.T) {
-	t.Run("set empty Constant struct", func(t *testing.T) {
-		overwrite_defaltTimeoutDuration(t, 10*time.Millisecond)
-		start := time.Now()
-		retrier := New(Constant{})
-		for retrier.Next() {
-		}
-		if time.Since(start) < 10*time.Millisecond {
-			t.Fatalf("expected to timeout after 100ms")
-		}
-	})
-	t.Run("set max attempts only", func(t *testing.T) {
-		retryCount := 0
-		retrier := New(Constant{
-			Interval:    time.Millisecond,
-			MaxAttempts: 10,
+	t.Parallel()
+	tests := []struct {
+		name                 string
+		algorithm            algorithm
+		exactAttempts        int
+		leastAttempts        int
+		durationForOverwrite time.Duration
+	}{
+		{
+			name: "timeout",
+			algorithm: Constant{
+				Context:  timeoutCtx(5 * time.Millisecond),
+				Interval: time.Millisecond,
+			},
+			leastAttempts: 4,
+		},
+		{
+			name: "max attempts",
+			algorithm: Constant{
+				Interval:    time.Millisecond,
+				MaxAttempts: 5,
+			},
+			exactAttempts: 5,
+		},
+		{
+			name:                 "default",
+			algorithm:            Constant{},
+			leastAttempts:        3,
+			durationForOverwrite: 3 * time.Second,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.durationForOverwrite != 0 {
+				overwrite_defaltTimeoutDuration(t, tt.durationForOverwrite)
+			}
+			r := New(tt.algorithm)
+			t.Logf("algorithm: %#v", r)
+			attempts := 0
+			start := time.Now()
+			for r.Next() {
+				d := time.Since(start)
+				t.Logf("attempt %d, %s elapsed", attempts, d)
+				start = time.Now()
+				attempts++
+			}
+			if tt.leastAttempts == 0 && attempts != tt.exactAttempts {
+				t.Fatalf("expected to reach %d attempts, actual: %d", tt.exactAttempts, attempts)
+			}
+			if tt.exactAttempts == 0 && attempts < tt.leastAttempts {
+				t.Fatalf("expected to reach %d attempts at least, but actual: %d", tt.leastAttempts, attempts)
+			}
 		})
-		for retrier.Next() {
-			retryCount++
-		}
-		if retryCount != 10 {
-			t.Fatalf("expected 10 retries, but %d", retryCount)
-		}
-	})
-	t.Run("set timeout only", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Millisecond)
-		defer cancel()
-		retrier := New(Constant{
-			Context:  ctx,
-			Interval: time.Second,
+	}
+}
+
+func TestJitter(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name                 string
+		algorithm            algorithm
+		exactAttempts        int
+		leastAttempts        int
+		durationLimit        time.Duration
+		durationForOverwrite time.Duration
+	}{
+		{
+			name: "timeout",
+			algorithm: Jitter{
+				Context: timeoutCtx(10 * time.Millisecond),
+				Base:    time.Millisecond,
+			},
+			leastAttempts: 3,
+		},
+		{
+			name: "max attempts",
+			algorithm: Jitter{
+				Base:        time.Millisecond,
+				MaxAttempts: 5,
+			},
+			exactAttempts: 5,
+		},
+		{
+			name: "max duration",
+			algorithm: Jitter{
+				Base:        time.Millisecond,
+				Max:         time.Millisecond,
+				MaxAttempts: 10,
+			},
+			durationLimit: 2 * time.Millisecond,
+			exactAttempts: 10,
+		},
+		{
+			name:                 "default",
+			algorithm:            Jitter{},
+			leastAttempts:        2,
+			durationForOverwrite: 3 * time.Second,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.durationForOverwrite != 0 {
+				overwrite_defaltTimeoutDuration(t, tt.durationForOverwrite)
+			}
+			r := New(tt.algorithm)
+			t.Logf("algorithm: %#v", r)
+			attempts := 0
+			start := time.Now()
+			for r.Next() {
+				d := time.Since(start)
+				t.Logf("attempt %d, %s elapsed", attempts, d)
+				if tt.durationLimit != 0 && d > tt.durationLimit {
+					t.Fatalf("expected to limit duration to %s, actual %d", tt.durationLimit, d)
+				}
+				start = time.Now()
+				attempts++
+			}
+			if tt.leastAttempts == 0 && attempts != tt.exactAttempts {
+				t.Fatalf("expected to reach %d attempts, actual: %d", tt.exactAttempts, attempts)
+			}
+			if tt.exactAttempts == 0 && attempts < tt.leastAttempts {
+				t.Fatalf("expected to reach %d attempts at least, but actual: %d", tt.leastAttempts, attempts)
+			}
 		})
-		start := time.Now()
-		for retrier.Next() {
-		}
-		if time.Since(start) < 10*time.Millisecond {
-			t.Fatal("expected timeout after 10ms")
-		}
-	})
-	t.Run("prioritize max attempts", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
-		defer cancel()
-		retrier := New(Constant{
-			Context:     ctx,
-			Interval:    time.Millisecond,
-			MaxAttempts: 10,
-		})
-		start := time.Now()
-		retryCount := 0
-		for retrier.Next() {
-			retryCount++
-		}
-		if time.Second < time.Since(start) && retryCount < 10 {
-			t.Fatal("expected to reach 10 retries before 1 second elapsed")
-		}
-	})
-	t.Run("prioritize timeout", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Millisecond)
-		defer cancel()
-		retrier := New(Constant{
-			Context:     ctx,
-			Interval:    2 * time.Millisecond,
-			MaxAttempts: 10,
-		})
-		start := time.Now()
-		retryCount := 0
-		for retrier.Next() {
-			t.Logf("retry %d, %s elapsed", retryCount, time.Since(start))
-			retryCount++
-		}
-		if 10 <= retryCount && 10*time.Millisecond < time.Since(start) {
-			t.Logf("%d retries took %s", retryCount, time.Since(start))
-			t.Fatal("expected to timeout before 10 retries")
-		}
-	})
+	}
 }
 
 func TestExponentialBackoff(t *testing.T) {
-	t.Run("set empty ExponentialBackoff struct", func(t *testing.T) {
-		overwrite_defaltTimeoutDuration(t, 10*time.Millisecond)
-		start := time.Now()
-		retrier := New(ExponentialBackoff{})
-		for retrier.Next() {
-		}
-		if time.Since(start) < 10*time.Millisecond {
-			t.Fatalf("expected to timeout after 10ms")
-		}
-	})
-	t.Run("set max attempts only", func(t *testing.T) {
-		retrier := New(ExponentialBackoff{
-			BaseInterval: time.Millisecond,
-			MaxAttempts:  10,
+	t.Parallel()
+	tests := []struct {
+		name                 string
+		algorithm            algorithm
+		exactAttempts        int
+		leastAttempts        int
+		durationLimit        time.Duration
+		durationForOverwrite time.Duration
+	}{
+		{
+			name: "timeout",
+			algorithm: ExponentialBackoff{
+				Context: timeoutCtx(10 * time.Millisecond),
+				Base:    time.Millisecond,
+			},
+			leastAttempts: 3,
+		},
+		{
+			name: "max attempts",
+			algorithm: ExponentialBackoff{
+				Base:        time.Millisecond,
+				MaxAttempts: 5,
+			},
+			exactAttempts: 5,
+		},
+		{
+			name: "max duration",
+			algorithm: ExponentialBackoff{
+				Base:        time.Millisecond,
+				Max:         time.Millisecond,
+				MaxAttempts: 10,
+			},
+			durationLimit: 2 * time.Millisecond,
+			exactAttempts: 10,
+		},
+		{
+			name:                 "default",
+			algorithm:            ExponentialBackoff{},
+			leastAttempts:        2,
+			durationForOverwrite: 3 * time.Second,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.durationForOverwrite != 0 {
+				overwrite_defaltTimeoutDuration(t, tt.durationForOverwrite)
+			}
+			r := New(tt.algorithm)
+			t.Logf("algorithm: %#v", r)
+			attempts := 0
+			start := time.Now()
+			for r.Next() {
+				d := time.Since(start)
+				t.Logf("attempt %d, %s elapsed", attempts, d)
+				if tt.durationLimit != 0 && d > tt.durationLimit {
+					t.Fatalf("expected to limit duration to %s, actual %d", tt.durationLimit, d)
+				}
+				start = time.Now()
+				attempts++
+			}
+			if tt.leastAttempts == 0 && attempts != tt.exactAttempts {
+				t.Fatalf("expected to reach %d attempts, actual: %d", tt.exactAttempts, attempts)
+			}
+			if tt.exactAttempts == 0 && attempts < tt.leastAttempts {
+				t.Fatalf("expected to reach %d attempts at least, but actual: %d", tt.leastAttempts, attempts)
+			}
 		})
-		start := time.Now()
-		retryCount := 0
-		for retrier.Next() {
-			t.Logf("retry %d, %s elapsed", retryCount, time.Since(start))
-			retryCount++
-		}
-		if retryCount != 10 && time.Since(start) < 600*time.Millisecond {
-			t.Fatalf(
-				"expected 10 retries, elapse at least 600ms, actual: %d retries, %s elapsed",
-				retryCount,
-				time.Since(start),
-			)
-		}
-	})
-	t.Run("set timeout only", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Millisecond)
-		defer cancel()
-		retrier := New(ExponentialBackoff{
-			Context:      ctx,
-			BaseInterval: time.Second,
-		})
-		start := time.Now()
-		for retrier.Next() {
-		}
-		if time.Since(start) < 10*time.Millisecond {
-			t.Fatalf("expected to timeout 10ms, but %s elapsed", time.Since(start))
-		}
-	})
-	t.Run("max attempts is prioritized", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
-		defer cancel()
-		retrier := New(ExponentialBackoff{
-			Context:      ctx,
-			BaseInterval: time.Millisecond,
-			MaxAttempts:  10,
-		})
-		start := time.Now()
-		retryCount := 0
-		for retrier.Next() {
-			retryCount++
-		}
-		if time.Second < time.Since(start) && retryCount < 10 {
-			t.Fatal("expected to reach 10 retries before 1 second elapsed")
-		}
-	})
-	t.Run("timeout is prioritized", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Millisecond)
-		defer cancel()
-		retrier := New(ExponentialBackoff{
-			Context:      ctx,
-			BaseInterval: time.Millisecond,
-			MaxAttempts:  10,
-		})
-		start := time.Now()
-		retryCount := 0
-		for retrier.Next() {
-			retryCount++
-		}
-		if 10 <= retryCount && 10*time.Millisecond < time.Since(start) {
-			t.Fatal("expected to timeout before 10 retries")
-		}
-	})
+	}
 }
 
 func overwrite_defaltTimeoutDuration(t *testing.T, d time.Duration) {
@@ -168,4 +211,9 @@ func overwrite_defaltTimeoutDuration(t *testing.T, d time.Duration) {
 		// reset to default not to effect other tests.
 		defaultTimeoutDuration = time.Minute
 	})
+}
+
+func timeoutCtx(d time.Duration) context.Context {
+	ctx, _ := context.WithTimeout(context.Background(), d)
+	return ctx
 }

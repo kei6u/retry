@@ -8,30 +8,45 @@ import (
 )
 
 func ExampleConstant() {
-	retrier := retry.New(retry.Constant{
-		Interval:    100 * time.Millisecond,
-		MaxAttempts: 10,
+	r := retry.New(retry.Constant{
+		Interval:    time.Millisecond,
+		MaxAttempts: 5,
 	})
-	retryCount := 0
+	attempts := 0
 	start := time.Now()
-	for retrier.Next() {
-		retryCount++
-		fmt.Printf("retry %d: %s elapsed\n", retryCount, time.Since(start))
+	for r.Next() {
+		fmt.Printf("attempt %d, %s\n", attempts, time.Since(start))
 		start = time.Now()
+		attempts++
+	}
+}
+
+func ExampleJitter() {
+	r := retry.New(retry.Jitter{
+		Base:        time.Millisecond,
+		Max:         100 * time.Millisecond,
+		MaxAttempts: 30,
+	})
+	attempts := 0
+	start := time.Now()
+	for r.Next() {
+		fmt.Printf("attempt %d, %s\n", attempts, time.Since(start))
+		start = time.Now()
+		attempts++
 	}
 }
 
 func ExampleExponentialBackoff() {
-	retrier := retry.New(retry.ExponentialBackoff{
-		BaseInterval: 100 * time.Millisecond,
-		MaxInterval:  10 * time.Second,
-		MaxAttempts:  10,
+	r := retry.New(retry.Jitter{
+		Base:        time.Millisecond,
+		Max:         100 * time.Millisecond,
+		MaxAttempts: 30,
 	})
-	retryCount := 0
+	attempts := 0
 	start := time.Now()
-	for retrier.Next() {
-		retryCount++
-		fmt.Printf("retry %d: %s elapsed\n", retryCount, time.Since(start))
+	for r.Next() {
+		fmt.Printf("attempt %d, %s\n", attempts, time.Since(start))
 		start = time.Now()
+		attempts++
 	}
 }

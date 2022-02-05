@@ -9,12 +9,15 @@ import (
 
 // retrier provides retry functionalities.
 type retrier struct {
-	ctx          context.Context
-	factor       float64 // factor controls retry interval ranges.
-	baseInterval time.Duration
-	maxInterval  time.Duration
-	maxAttempts  float64
-	attempts     float64
+	calculator
+	ctx         context.Context
+	maxAttempts float64
+	attempts    float64
+}
+
+// calculator calculates duration to wait for next retry.
+type calculator interface {
+	calc() time.Duration
 }
 
 // Next returns true if the next retry should be performed
@@ -40,27 +43,21 @@ func (r *retrier) Next() bool {
 	if r.attempts == r.maxAttempts {
 		return false
 	}
-	interval := float64(r.baseInterval) * math.Pow(2, r.attempts)
-	factoredInterval := interval / r.factor
-	waitDuration := time.Duration(randomBetween(factoredInterval, interval))
-	if r.maxInterval < waitDuration {
-		waitDuration = r.maxInterval
-	}
 	select {
 	case <-r.ctx.Done():
 		return false
-	case <-time.After(waitDuration):
+	case <-time.After(time.Duration(r.calc())):
 		return true
 	}
 }
 
-type strategy interface {
+type algorithm interface {
 	new() retrier
 }
 
 // New creates a new Retrier.
-func New(s strategy) retrier {
-	return s.new()
+func New(a algorithm) retrier {
+	return a.new()
 }
 
 // defining this as a global variable for testing.
@@ -71,7 +68,49 @@ func randomBetween(min, max float64) float64 {
 	return rand.Float64()*(max-min) + min
 }
 
-var _ strategy = (*Constant)(nil)
+// Jitter provides options for jitter intervals.
+//
+// An interval can be computed by this expression.
+//
+// interval = min(max, randomBetween(base, interval * 3))
+type Jitter struct {
+	// Context is for timeout or canceling retry loop.
+	Context context.Context
+	// Base is the base wait duration to retry.
+	Base time.Duration
+	// Max is the maximum wait duration to retry.
+	Max time.Duration
+	// MaxAttempts is the maximum number of retries.
+	MaxAttempts float64
+
+	interval time.Duration
+}
+
+func (j *Jitter) calc() time.Duration {
+	if j.interval == 0 {
+		j.interval = j.Base
+	}
+	d := time.Duration(math.Min(
+		float64(j.Max),
+		randomBetween(float64(j.Base), float64(j.interval)*3),
+	))
+	j.interval = d
+	return d
+}
+
+func (j Jitter) new() retrier {
+	if j.Base == 0 {
+		j.Base = time.Second
+	}
+	if j.Max == 0 {
+		j.Max = time.Minute
+	}
+	return retrier{
+		calculator:  &j,
+		ctx:         j.Context,
+		maxAttempts: j.MaxAttempts,
+	}
+}
 
 // Constant provides options for constant intervals.
 type Constant struct {
@@ -79,87 +118,63 @@ type Constant struct {
 	Context context.Context
 	// Interval is the interval between retries.
 	Interval time.Duration
-	// MaxAttempts is the maximum number of attempts to retry.
-	MaxAttempts uint
+	// MaxAttempts is the maximum number of retries.
+	MaxAttempts float64
 }
 
-func (opts Constant) new() retrier {
-	var (
-		maxAttempts  uint
-		baseInterval = time.Second
-		maxInterval  = time.Second
-	)
-	const (
-		factor   float64 = 1 // for constant interval.
-		attempts float64 = 0
-	)
+func (c Constant) calc() time.Duration {
+	return c.Interval
+}
 
-	if opts.Interval != 0 {
-		baseInterval = opts.Interval
-		maxInterval = opts.Interval
+func (c Constant) new() retrier {
+	if c.Interval == 0 {
+		c.Interval = time.Second
 	}
-	if opts.MaxAttempts != 0 {
-		maxAttempts = opts.MaxAttempts
-	}
-
 	return retrier{
-		ctx:          opts.Context,
-		factor:       factor,
-		baseInterval: baseInterval,
-		maxInterval:  maxInterval,
-		maxAttempts:  float64(maxAttempts),
-		attempts:     attempts,
+		calculator:  c,
+		ctx:         c.Context,
+		maxAttempts: c.MaxAttempts,
 	}
 }
-
-var _ strategy = (*ExponentialBackoff)(nil)
 
 // ExponentialBackoff provides options for the exponential backoff algorithm.
 //
 // An interval can be computed by this expression.
 //
-// interval = baseInterval * (2 ^ retryAttempts)
-//
-// Then, randomly choose a float64 number from `interval / 2` to `interval`.
-// If a chosen float64 number is more than maxInterval, use maxInterval instead.
+// temp = base * (2 ^ attempts)
+// interval = min(max, randomBetween(temp / 2, temp))
 type ExponentialBackoff struct {
 	// Context is for timeout or canceling retry loop.
 	Context context.Context
-	// BaseInterval controls the rate of exponential backoff interval growth.
-	BaseInterval time.Duration
-	// MaxInterval is the maximum wait duration to retry.
-	MaxInterval time.Duration
-	// MaxAttempts is the maximum number of attempts to retry.
-	MaxAttempts uint
+	// Base controls the rate of exponential backoff interval growth.
+	Base time.Duration
+	// Max is the maximum wait duration to retry.
+	Max time.Duration
+	// MaxAttempts is the maximum number of retries.
+	MaxAttempts float64
+
+	attempt float64
 }
 
-func (opts ExponentialBackoff) new() retrier {
-	var (
-		maxAttempts  uint
-		baseInterval = time.Second
-		maxInterval  = 64 * time.Second
-	)
-	const (
-		factor   float64 = 2
-		attempts float64 = 0
-	)
+func (b *ExponentialBackoff) calc() time.Duration {
+	b.attempt++
+	temp := float64(b.Base) * math.Pow(2, b.attempt)
+	return time.Duration(math.Min(
+		float64(b.Max),
+		randomBetween(temp/2, temp),
+	))
+}
 
-	if opts.BaseInterval != 0 {
-		baseInterval = opts.BaseInterval
+func (b ExponentialBackoff) new() retrier {
+	if b.Base == 0 {
+		b.Base = time.Second
 	}
-	if opts.MaxInterval != 0 {
-		maxInterval = opts.MaxInterval
+	if b.Max == 0 {
+		b.Max = time.Minute
 	}
-	if opts.MaxAttempts != 0 {
-		maxAttempts = opts.MaxAttempts
-	}
-
 	return retrier{
-		ctx:          opts.Context,
-		factor:       factor,
-		baseInterval: baseInterval,
-		maxInterval:  maxInterval,
-		maxAttempts:  float64(maxAttempts),
-		attempts:     attempts,
+		calculator:  &b,
+		ctx:         b.Context,
+		maxAttempts: b.MaxAttempts,
 	}
 }
