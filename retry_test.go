@@ -221,3 +221,41 @@ func timeoutCtx(d time.Duration) context.Context {
 	}()
 	return ctx
 }
+
+func TestJitter_calc(t *testing.T) {
+	t.Parallel()
+	j := Jitter{
+		Base: time.Millisecond,
+		Max:  time.Hour,
+	}
+	prev := time.Millisecond
+	isJitter := false
+	for i := 0; i < 10; i++ {
+		d := j.calc()
+		t.Logf("calc %d, %s", i, d)
+		if d < prev {
+			isJitter = true
+		}
+		prev = d
+	}
+	if !isJitter {
+		t.FailNow()
+	}
+}
+
+func TestExponentialBackoff_calc(t *testing.T) {
+	t.Parallel()
+	b := ExponentialBackoff{
+		Base: time.Millisecond,
+		Max:  time.Hour,
+	}
+	prev := time.Millisecond
+	for i := 0; i < 10; i++ {
+		d := b.calc()
+		t.Logf("calc %d, %s", i, d)
+		if d < prev {
+			t.Fatalf("calculated duration must be greater than previous one")
+		}
+		prev = d
+	}
+}
