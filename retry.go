@@ -81,7 +81,7 @@ type Jitter struct {
 	Base time.Duration
 	// Max is the maximum wait duration to retry. Default is 15 seconds.
 	Max time.Duration
-	// MaxAttempts is the maximum number of retries. Default is 0
+	// MaxAttempts is the maximum number of retries. Default is 0.
 	MaxAttempts float64
 
 	interval time.Duration
@@ -120,7 +120,7 @@ type Constant struct {
 	Context context.Context
 	// Interval is the interval between retries. Default is 1 second.
 	Interval time.Duration
-	// MaxAttempts is the maximum number of retries. Default is 0
+	// MaxAttempts is the maximum number of retries. Default is 0.
 	MaxAttempts float64
 }
 
@@ -152,9 +152,9 @@ type ExponentialBackoff struct {
 	// Base controls the rate of exponential backoff interval growth.
 	// Default is 1 second.
 	Base time.Duration
-	// Max is the maximum wait duration to retry. Default is 15 seconds
+	// Max is the maximum wait duration to retry. Default is 15 seconds.
 	Max time.Duration
-	// MaxAttempts is the maximum number of retries. Default is 0
+	// MaxAttempts is the maximum number of retries. Default is 0.
 	MaxAttempts float64
 
 	attempt float64
