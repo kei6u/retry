@@ -10,7 +10,9 @@ You can choose a retry algorithm from constant intervals, decorrelated jitter al
 
 I would like to use retry algorithms inspired by [Exponential Backoff And Jitter | AWS Architecture Blog](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) in Go.
 
-## When
+## Use cases
+
+Here are some possible use cases.
 
 - When the database returns internal errors, your application will retry to run SQL with this library.
 - When the API returns 5xx errors, your application will retry to call it with this library.
@@ -21,10 +23,6 @@ See the [document](https://pkg.go.dev/github.com/kei6u/retry) and run [examples]
 
 ```bash
 go get github.com/kei6u/retry
-```
-
-```go
-import "github.com/kei6u/retry"
 ```
 
 ```go
@@ -51,9 +49,6 @@ for r.Next() {
 ### Jitter (Recommended)
 
 This algorithm provides retries with "Decorrelated Jitter" from [Exponential Backoff And Jitter | AWS Architecture Blog](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/). This blog introduces this algorithm as better. You can run the [example](https://pkg.go.dev/github.com/kei6u/retry#example-Jitter) on your browser.
-
-> It’s worth noting that none of these approaches fundamentally change the N2 nature of the work to be done, but do substantially reduce work at reasonable levels of contention. The return on implementation complexity of using jittered backoff is huge, and it should be considered a standard approach for remote clients.
-> https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
 
 ### Constant
 
