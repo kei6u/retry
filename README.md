@@ -35,24 +35,17 @@ r := retry.New(retry.Jitter{
 for r.Next() {
 	resp, err := http.Get("http://example.com")
 	if err != nil {
-		return nil, err
+		_ = resp.Body.Close()
+		return err
 	}
 	if 500 <= resp.StatusCode && resp.StatusCode < 600 {
 		_ = resp.Body.Close()
 		continue
 	}
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
+	if resp.StatusCode == 200 {
 		_ = resp.Body.Close()
-		return nil, err
+		return nil
 	}
-	var m map[string]interface{}
-	if err := json.Unmarshal(b, &m); err != nil {
-		_ = resp.Body.Close()
-		return nil, err
-	}
-	_ = resp.Body.Close()
-	return m, nil
 }
 ```
 
