@@ -9,7 +9,7 @@ import (
 
 func ExampleConstant() {
 	r := retry.New(retry.Constant{
-		Interval:    time.Millisecond,
+		Interval:    time.Second,
 		MaxAttempts: 5,
 	})
 	retries := 0
@@ -42,8 +42,8 @@ func ExampleJitter() {
 func ExampleExponentialBackoff() {
 	r := retry.New(retry.ExponentialBackoff{
 		Base:        time.Millisecond,
-		Max:         100 * time.Millisecond,
-		MaxAttempts: 30,
+		Max:         10 * time.Second,
+		MaxAttempts: 20,
 	})
 	retries := 0
 	var ds []time.Duration
