@@ -69,6 +69,7 @@ func randomBetween(min, max float64) float64 {
 }
 
 // Jitter provides options for jitter intervals.
+// You can set empty for any fields, it will use default values.
 //
 // An interval can be computed by this expression.
 //
@@ -113,6 +114,7 @@ func (j Jitter) new() retrier {
 }
 
 // Constant provides options for constant intervals.
+// You can set empty for any fields, it will use default values.
 type Constant struct {
 	// Context is for timeout or canceling retry loop.
 	Context context.Context
@@ -138,6 +140,7 @@ func (c Constant) new() retrier {
 }
 
 // ExponentialBackoff provides options for the exponential backoff algorithm.
+// You can set empty for any fields, it will use default values.
 //
 // An interval can be computed by this expression.
 //

@@ -28,10 +28,7 @@ import "github.com/kei6u/retry"
 ```
 
 ```go
-r := retry.New(retry.Jitter{
-	Base:        time.Second,
-	MaxAttempts: 30,
-})
+r := retry.New(retry.Jitter{})
 for r.Next() {
 	resp, err := http.Get("http://example.com")
 	if err != nil {
