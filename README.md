@@ -19,8 +19,6 @@ I would like to use retry algorithms inspired by [Exponential Backoff And Jitter
 
 See the [document](https://pkg.go.dev/github.com/kei6u/retry) and run [examples](https://pkg.go.dev/github.com/kei6u/retry#pkg-examples).
 
-### Import
-
 ```bash
 go get github.com/kei6u/retry
 ```
@@ -29,12 +27,9 @@ go get github.com/kei6u/retry
 import "github.com/kei6u/retry"
 ```
 
-### Synopsis
-
 ```go
 r := retry.New(retry.Jitter{
 	Base:        time.Second,
-	Max:         30 * time.Second,
 	MaxAttempts: 30,
 })
 for r.Next() {
@@ -60,6 +55,8 @@ for r.Next() {
 	return m, nil
 }
 ```
+
+## Algorithms
 
 ### Jitter (Recommended)
 
