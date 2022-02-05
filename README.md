@@ -29,6 +29,23 @@ go get github.com/kei6u/retry
 import "github.com/kei6u/retry"
 ```
 
+### Synopsis
+
+```go
+r := retry.New(retry.Jitter{
+	Base:        time.Millisecond,
+	Max:         100 * time.Millisecond,
+	MaxAttempts: 30,
+})
+attempts := 0
+start := time.Now()
+for r.Next() {
+	fmt.Printf("attempt %d, %s\n", attempts, time.Since(start))
+	start = time.Now()
+	attempts++
+}
+```
+
 ### Jitter (Recommended)
 
 This algorithm provides retries with "Decorrelated Jitter" from [Exponential Backoff And Jitter | AWS Architecture Blog](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/). This blog introduces this algorithm as better. You can run the [example](https://pkg.go.dev/github.com/kei6u/retry#example-Jitter) on your browser.
