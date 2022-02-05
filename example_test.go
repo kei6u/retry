@@ -12,12 +12,12 @@ func ExampleConstant() {
 		Interval:    time.Millisecond,
 		MaxAttempts: 5,
 	})
-	attempts := 0
+	retries := 0
 	start := time.Now()
 	for r.Next() {
-		fmt.Printf("attempt %d, %s\n", attempts, time.Since(start))
+		fmt.Printf("retry %d, %s\n", retries, time.Since(start))
 		start = time.Now()
-		attempts++
+		retries++
 	}
 }
 
@@ -26,15 +26,15 @@ func ExampleJitter() {
 		Base:        time.Millisecond,
 		MaxAttempts: 30,
 	})
-	attempts := 0
+	retries := 0
 	var ds []time.Duration
 	start := time.Now()
 	for r.Next() {
 		d := time.Since(start)
 		ds = append(ds, d)
-		fmt.Printf("attempt %d, %s\n", attempts, d)
+		fmt.Printf("retry %d, %s\n", retries, d)
 		start = time.Now()
-		attempts++
+		retries++
 	}
 	fmt.Printf("durations: %v\n", ds)
 }
@@ -45,15 +45,15 @@ func ExampleExponentialBackoff() {
 		Max:         100 * time.Millisecond,
 		MaxAttempts: 30,
 	})
-	attempts := 0
+	retries := 0
 	var ds []time.Duration
 	start := time.Now()
 	for r.Next() {
 		d := time.Since(start)
 		ds = append(ds, d)
-		fmt.Printf("attempt %d, %s\n", attempts, d)
+		fmt.Printf("retry %d, %s\n", retries, d)
 		start = time.Now()
-		attempts++
+		retries++
 	}
 	fmt.Printf("durations: %v\n", ds)
 }
