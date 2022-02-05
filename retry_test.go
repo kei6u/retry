@@ -214,6 +214,10 @@ func overwrite_defaltTimeoutDuration(t *testing.T, d time.Duration) {
 }
 
 func timeoutCtx(d time.Duration) context.Context {
-	ctx, _ := context.WithTimeout(context.Background(), d)
+	ctx, cancel := context.WithTimeout(context.Background(), d)
+	go func() {
+		<-ctx.Done()
+		cancel()
+	}()
 	return ctx
 }
