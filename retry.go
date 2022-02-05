@@ -75,13 +75,13 @@ func randomBetween(min, max float64) float64 {
 //
 // interval = min(max, randomBetween(base, interval * 3))
 type Jitter struct {
-	// Context is for timeout or canceling retry loop.
+	// Context is for timeout or canceling retry loop. Default is 1 minute timeout.
 	Context context.Context
-	// Base is the base wait duration to retry.
+	// Base is the base wait duration to retry. Default is 1 second.
 	Base time.Duration
-	// Max is the maximum wait duration to retry.
+	// Max is the maximum wait duration to retry. Default is 15 seconds.
 	Max time.Duration
-	// MaxAttempts is the maximum number of retries.
+	// MaxAttempts is the maximum number of retries. Default is 0
 	MaxAttempts float64
 
 	interval time.Duration
@@ -116,11 +116,11 @@ func (j Jitter) new() retrier {
 // Constant provides options for constant intervals.
 // You can set empty for any fields, it will use default values.
 type Constant struct {
-	// Context is for timeout or canceling retry loop.
+	// Context is for timeout or canceling retry loop. Default is 1 minute timeout.
 	Context context.Context
-	// Interval is the interval between retries.
+	// Interval is the interval between retries. Default is 1 second.
 	Interval time.Duration
-	// MaxAttempts is the maximum number of retries.
+	// MaxAttempts is the maximum number of retries. Default is 0
 	MaxAttempts float64
 }
 
@@ -147,13 +147,14 @@ func (c Constant) new() retrier {
 // temp = base * (2 ^ attempts)
 // interval = min(max, randomBetween(temp / 2, temp))
 type ExponentialBackoff struct {
-	// Context is for timeout or canceling retry loop.
+	// Context is for timeout or canceling retry loop. Default is 1 minute timeout.
 	Context context.Context
 	// Base controls the rate of exponential backoff interval growth.
+	// Default is 1 second.
 	Base time.Duration
-	// Max is the maximum wait duration to retry.
+	// Max is the maximum wait duration to retry. Default is 15 seconds
 	Max time.Duration
-	// MaxAttempts is the maximum number of retries.
+	// MaxAttempts is the maximum number of retries. Default is 0
 	MaxAttempts float64
 
 	attempt float64
@@ -173,7 +174,7 @@ func (b ExponentialBackoff) new() retrier {
 		b.Base = time.Second
 	}
 	if b.Max == 0 {
-		b.Max = time.Minute
+		b.Max = 15 * time.Second
 	}
 	return retrier{
 		calculator:  &b,
