@@ -135,12 +135,12 @@ func TestJitter(t *testing.T) {
 			start := time.Now()
 			for r.Next() {
 				d := time.Since(start)
-				t.Logf("attempt %d, %s elapsed", attempts, d)
 				if tt.mostDuration != 0 && d > tt.mostDuration {
 					t.Fatalf("expected not to exceed %s at most, actual %d", tt.mostDuration, d)
 				}
-				start = time.Now()
+				t.Logf("attempt %d, %s elapsed", attempts, d)
 				attempts++
+				start = time.Now()
 			}
 			if tt.leastAttempts == 0 && attempts != tt.exactAttempts {
 				t.Fatalf("expected to reach %d attempts, actual: %d", tt.exactAttempts, attempts)
