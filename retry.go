@@ -24,15 +24,19 @@ type calculator interface {
 // and waits for the interval before the next retry.
 func (r *retrier) Next() bool {
 	if r.ctx == nil {
-		ctx, cancel := context.WithTimeout(
-			context.Background(),
-			defaultTimeoutDuration,
-		)
-		r.ctx = ctx
-		go func() {
-			<-ctx.Done()
-			cancel()
-		}()
+		if r.maxAttempts == 0 {
+			ctx, cancel := context.WithTimeout(
+				context.Background(),
+				defaultTimeoutDuration,
+			)
+			r.ctx = ctx
+			go func() {
+				<-ctx.Done()
+				cancel()
+			}()
+		} else {
+			r.ctx = context.Background()
+		}
 	}
 	defer func() {
 		r.attempts++
@@ -95,6 +99,7 @@ type Jitter struct {
 	// Max is the maximum wait duration to retry. Default is 15 seconds.
 	Max time.Duration
 	// MaxAttempts is the maximum number of retries. Default is 0.
+	// If set 0, it will prioritize timeout.
 	MaxAttempts float64
 
 	interval time.Duration
@@ -134,6 +139,7 @@ type Constant struct {
 	// Interval is the interval between retries. Default is 1 second.
 	Interval time.Duration
 	// MaxAttempts is the maximum number of retries. Default is 0.
+	// If set 0, it will prioritize timeout.
 	MaxAttempts float64
 }
 
@@ -181,6 +187,7 @@ type ExponentialBackoff struct {
 	// Max is the maximum wait duration to retry. Default is 15 seconds.
 	Max time.Duration
 	// MaxAttempts is the maximum number of retries. Default is 0.
+	// If set 0, it will prioritize timeout.
 	MaxAttempts float64
 
 	attempt float64

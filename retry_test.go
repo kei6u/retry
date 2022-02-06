@@ -32,6 +32,15 @@ func TestConstant(t *testing.T) {
 			exactAttempts: 5,
 		},
 		{
+			name: "prefer max attempts to default timeout",
+			algorithm: Constant{
+				Interval:    time.Millisecond,
+				MaxAttempts: 5,
+			},
+			exactAttempts:        5,
+			durationForOverwrite: time.Millisecond,
+		},
+		{
 			name:                 "default",
 			algorithm:            Constant{},
 			leastAttempts:        3,
@@ -70,7 +79,7 @@ func TestJitter(t *testing.T) {
 		algorithm            algorithm
 		exactAttempts        int
 		leastAttempts        int
-		durationLimit        time.Duration
+		mostDuration         time.Duration
 		durationForOverwrite time.Duration
 	}{
 		{
@@ -90,13 +99,22 @@ func TestJitter(t *testing.T) {
 			exactAttempts: 5,
 		},
 		{
+			name: "prefer max attempts to default timeout",
+			algorithm: Jitter{
+				Base:        time.Millisecond,
+				MaxAttempts: 5,
+			},
+			exactAttempts:        5,
+			durationForOverwrite: time.Millisecond,
+		},
+		{
 			name: "max duration",
 			algorithm: Jitter{
 				Base:        time.Millisecond,
 				Max:         time.Millisecond,
 				MaxAttempts: 10,
 			},
-			durationLimit: 2 * time.Millisecond,
+			mostDuration:  2 * time.Millisecond,
 			exactAttempts: 10,
 		},
 		{
@@ -118,8 +136,8 @@ func TestJitter(t *testing.T) {
 			for r.Next() {
 				d := time.Since(start)
 				t.Logf("attempt %d, %s elapsed", attempts, d)
-				if tt.durationLimit != 0 && d > tt.durationLimit {
-					t.Fatalf("expected to limit duration to %s, actual %d", tt.durationLimit, d)
+				if tt.mostDuration != 0 && d > tt.mostDuration {
+					t.Fatalf("expected not to exceed %s at most, actual %d", tt.mostDuration, d)
 				}
 				start = time.Now()
 				attempts++
@@ -141,7 +159,7 @@ func TestExponentialBackoff(t *testing.T) {
 		algorithm            algorithm
 		exactAttempts        int
 		leastAttempts        int
-		durationLimit        time.Duration
+		mostDuration         time.Duration
 		durationForOverwrite time.Duration
 	}{
 		{
@@ -161,13 +179,22 @@ func TestExponentialBackoff(t *testing.T) {
 			exactAttempts: 5,
 		},
 		{
+			name: "prefer max attempts to default timeout",
+			algorithm: ExponentialBackoff{
+				Base:        time.Millisecond,
+				MaxAttempts: 5,
+			},
+			exactAttempts:        5,
+			durationForOverwrite: time.Millisecond,
+		},
+		{
 			name: "max duration",
 			algorithm: ExponentialBackoff{
 				Base:        time.Millisecond,
 				Max:         time.Millisecond,
 				MaxAttempts: 10,
 			},
-			durationLimit: 2 * time.Millisecond,
+			mostDuration:  2 * time.Millisecond,
 			exactAttempts: 10,
 		},
 		{
@@ -189,8 +216,8 @@ func TestExponentialBackoff(t *testing.T) {
 			for r.Next() {
 				d := time.Since(start)
 				t.Logf("attempt %d, %s elapsed", attempts, d)
-				if tt.durationLimit != 0 && d > tt.durationLimit {
-					t.Fatalf("expected to limit duration to %s, actual %d", tt.durationLimit, d)
+				if tt.mostDuration != 0 && d > tt.mostDuration {
+					t.Fatalf("expected not to exceed %s at most, actual %d", tt.mostDuration, d)
 				}
 				start = time.Now()
 				attempts++
