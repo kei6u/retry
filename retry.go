@@ -74,6 +74,19 @@ func randomBetween(min, max float64) float64 {
 // An interval can be computed by this expression.
 //
 // interval = min(max, randomBetween(base, interval * 3))
+//
+// Example: Given 1 second for Base, the sequence 10 retries will be:
+//
+// Retry #1:  2.20932s
+// Retry #2:  6.293147s
+// Retry #3:  12.881962s
+// Retry #4:  17.478132s
+// Retry #5:  22.84098s
+// Retry #6:  47.376313s
+// Retry #7:  10.263282s
+// Retry #8:  5.662684s
+// Retry #9:  2.550353s
+// Retry #10: 6.793149s
 type Jitter struct {
 	// Context is for timeout or canceling retry loop. Default is 1 minute timeout.
 	Context context.Context
@@ -146,6 +159,19 @@ func (c Constant) new() retrier {
 //
 // temp = base * (2 ^ attempts)
 // interval = min(max, randomBetween(temp / 2, temp))
+//
+// Example: Given 1 second for Base and 2 minute for Max, the sequence 10 retries will be:
+//
+// Retry #1:  1.60466s
+// Retry #2:  3.881018s
+// Retry #3:  6.65824s
+// Retry #4:  11.501713s
+// Retry #5:  22.84098s
+// Retry #6:  53.978338s
+// Retry #7:  68.200769s
+// Retry #8:  2m
+// Retry #9:  2m
+// Retry #10: 2m
 type ExponentialBackoff struct {
 	// Context is for timeout or canceling retry loop. Default is 1 minute timeout.
 	Context context.Context
