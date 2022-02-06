@@ -23,8 +23,12 @@ type calculator interface {
 // Next returns true if the next retry should be performed
 // and waits for the interval before the next retry.
 func (r *retrier) Next() bool {
+	defer func() {
+		r.attempts++
+	}()
 	if r.ctx == nil {
 		if r.maxAttempts == 0 {
+			// Set timeout to prevent infinite loop.
 			ctx, cancel := context.WithTimeout(
 				context.Background(),
 				defaultTimeoutDuration,
@@ -35,12 +39,10 @@ func (r *retrier) Next() bool {
 				cancel()
 			}()
 		} else {
+			// Prefer max attempts over timeout.
 			r.ctx = context.Background()
 		}
 	}
-	defer func() {
-		r.attempts++
-	}()
 	if r.attempts == 0 {
 		return true
 	}
