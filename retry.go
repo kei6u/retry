@@ -52,7 +52,7 @@ func (r *retrier) Next() bool {
 	select {
 	case <-r.ctx.Done():
 		return false
-	case <-time.After(time.Duration(r.calc())):
+	case <-time.After(r.calc()):
 		return true
 	}
 }
