@@ -8,7 +8,8 @@ You can choose a retry algorithm from constant intervals, decorrelated jitter al
 
 ## Motivation
 
-I would like to use retry algorithms inspired by [Exponential Backoff And Jitter | AWS Architecture Blog](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) in Go.
+- I would like to use retry algorithms inspired by [Exponential Backoff And Jitter | AWS Architecture Blog](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) in Go.
+- A number of [retry library](https://pkg.go.dev/search?q=retry&m=package) are already available for Go, but I wanted more straightforward API.
 
 ## Use cases
 
