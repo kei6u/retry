@@ -1,3 +1,3 @@
-module github.com/kei6u/retry
+module github.com/keisku/retry
 
 go 1.17

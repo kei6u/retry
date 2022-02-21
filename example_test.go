@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kei6u/retry"
+	"github.com/keisku/retry"
 )
 
 func ExampleConstant() {
